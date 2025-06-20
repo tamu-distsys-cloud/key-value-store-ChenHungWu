@@ -7,7 +7,8 @@ from server import GetArgs, GetReply, PutAppendArgs, PutAppendReply, key2shard, 
 
 def nrand() -> int:
     return random.getrandbits(62)
-
+max_retries = 100
+sleep_time = 0.01
 class Clerk:
     def __init__(self, servers: List[ClientEnd], cfg):
         self.servers = servers
@@ -45,9 +46,8 @@ class Clerk:
         shard = key2shard(key, self.nshards)
         responsible_servers = shard_servers(shard, self.nshards, self.nreplicas)
         # print(f"client_id: {self.client_id} key: {key} responsible_servers: {responsible_servers} shard: {shard} nshards: {self.nshards} nreplicas: {self.nreplicas}")
-        max_retries = 100  # 最大重試次數
-        retry_count = 0
         
+        retry_count = 0
         while retry_count < max_retries:
             # try all the replicas
             for server_id in responsible_servers:
@@ -59,7 +59,7 @@ class Clerk:
                     continue
             
             retry_count += 1
-            time.sleep(0.01)  # sleep for a short time and then retry
+            time.sleep(sleep_time)  # sleep for a short time and then retry
         
         # if the operation keeps failing
         print(f"Client {self.client_id} Failed to get key {key} after {max_retries} retries")
@@ -87,9 +87,7 @@ class Clerk:
         # the primary server is the first server in the list
         primaryPreferred = responsible_servers[0]
 
-        max_retries = 100  # 最大重試次數
         retry_count = 0
-        
         while retry_count < max_retries:
             # only try the primary server
             try:
@@ -100,7 +98,7 @@ class Clerk:
                 pass
             
             retry_count += 1
-            time.sleep(0.01)  # sleep for a short time and then retry
+            time.sleep(sleep_time)  # sleep for a short time and then retry
         
         # if the operation keeps failing
         print(f"Client {self.client_id} Failed to {op} key {key} after {max_retries} retries")
